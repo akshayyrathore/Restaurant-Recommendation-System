@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def load_and_process_data():
     """
@@ -37,3 +38,51 @@ def filter_restaurants(df, cuisine_type):
 
     # Select and rename columns for display
     return display_df[["Restaurant Name", "Cuisines", "Address", "Cost", "Rating"]]
+
+def get_restaurant_recommendations(df, preferences):
+    """
+    Get restaurant recommendations based on user preferences
+
+    Parameters:
+    - df: DataFrame containing restaurant data
+    - preferences: dict containing:
+        - preferred_cuisines: list of cuisine types
+        - max_budget: maximum budget per person
+        - min_rating: minimum rating threshold
+    """
+    try:
+        # Create a scoring system
+        scored_df = df.copy()
+
+        # Initialize score column
+        scored_df['score'] = 0.0
+
+        # Score based on cuisine preferences (30% weight)
+        for cuisine in preferences['preferred_cuisines']:
+            cuisine = cuisine.lower()
+            scored_df['score'] += scored_df['Cuisines'].str.contains(cuisine, case=False, na=False) * 30
+
+        # Score based on rating (40% weight)
+        min_rating = preferences.get('min_rating', 0)
+        scored_df['score'] += (scored_df['Aggregate rating'] - min_rating) * 8
+
+        # Score based on budget (30% weight)
+        max_budget = preferences.get('max_budget', float('inf'))
+        budget_score = 30 * (1 - scored_df['Average Cost for two'] / (max_budget * 2))
+        scored_df['score'] += budget_score.clip(lower=0)
+
+        # Sort by score and get top recommendations
+        recommendations = scored_df.nlargest(10, 'score')
+
+        # Format display data
+        recommendations['Cost'] = recommendations.apply(
+            lambda x: f"{x['Currency']} {x['Average Cost for two']:.2f}", axis=1
+        )
+        recommendations['Rating'] = recommendations['Aggregate rating'].apply(
+            lambda x: f"{'⭐' * int(round(x))}" if pd.notnull(x) else "Not rated"
+        )
+
+        return recommendations[["Restaurant Name", "Cuisines", "Address", "Cost", "Rating"]]
+
+    except Exception as e:
+        raise Exception(f"Error generating recommendations: {str(e)}")
