@@ -8,7 +8,8 @@ from ml_utils import RestaurantRatingPredictor
 st.set_page_config(
     page_title="Restaurant Finder",
     page_icon="🍽️",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 try:
@@ -27,26 +28,43 @@ try:
 
     # Sidebar for search history
     with st.sidebar:
-        st.header("Search History")
+        st.image("assets/banner.svg", use_column_width=True)
+        st.markdown("### 🕒 Recent Searches")
         if 'search_history' not in st.session_state:
             st.session_state.search_history = []
 
         for hist in st.session_state.search_history[-5:]:
-            st.text(f"🔍 {hist}")
+            st.markdown(f"🔍 `{hist}`")
+
+        st.markdown("---")
+        st.markdown("### 📊 Quick Stats")
+        st.markdown(f"Total Restaurants: **{len(df)}**")
+        st.markdown(f"Cuisines Available: **{len(set(df['Cuisines'].str.split(',').sum()))}**")
+        st.markdown(f"Cities Covered: **{len(df['City'].unique())}**")
 
     # Main content
-    st.title("Restaurant Finder & Recommender")
+    st.title("🍽️ Restaurant Finder & Recommender")
+    st.markdown("""
+        <div style='text-align: center; margin-bottom: 2rem;'>
+            Discover the perfect dining experience with our intelligent restaurant finder and recommendation system.
+        </div>
+    """, unsafe_allow_html=True)
 
-    # Create tabs for different functionalities
+    # Create tabs with icons
     tab1, tab2, tab3 = st.tabs([
-        "Search by Cuisine", 
-        "Get Personalized Recommendations",
-        "Predict Restaurant Rating"
+        "🔍 Search by Cuisine", 
+        "⭐ Get Recommendations",
+        "🎯 Predict Rating"
     ])
 
     # Tab 1: Search by Cuisine
     with tab1:
-        st.subheader("Find Restaurants by Cuisine")
+        st.markdown("""
+            <div style='background-color: #FFF5F5; padding: 1rem; border-radius: 10px; margin-bottom: 2rem;'>
+                <h3 style='margin: 0; color: #FF4B4B;'>Find Your Favorite Cuisine</h3>
+                <p style='margin: 0.5rem 0 0 0;'>Search through our extensive database of restaurants by cuisine type.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
         # Get unique cuisines for autocomplete
         all_cuisines = set()
@@ -59,25 +77,25 @@ try:
         col1, col2 = st.columns([3, 1])
         with col1:
             cuisine_type = st.selectbox(
-                "Select cuisine type",
+                "What cuisine are you craving today?",
                 options=all_cuisines,
                 index=None,
                 placeholder="Choose a cuisine..."
             )
         with col2:
-            search_button = st.button("Search", type="primary")
+            search_button = st.button("Search Restaurants", type="primary")
 
         if cuisine_type and search_button:
             if cuisine_type not in st.session_state.search_history:
                 st.session_state.search_history.append(cuisine_type)
 
-            with st.spinner('Searching restaurants...'):
+            with st.spinner('🔍 Searching for the best restaurants...'):
                 results = filter_restaurants(df, cuisine_type)
 
                 if isinstance(results, str):
                     st.warning(results)
                 else:
-                    st.success(f"Found {len(results)} restaurants serving {cuisine_type} cuisine")
+                    st.success(f"🎉 Found {len(results)} amazing restaurants serving {cuisine_type} cuisine!")
                     st.dataframe(
                         results,
                         column_config={
@@ -92,27 +110,34 @@ try:
 
     # Tab 2: Personalized Recommendations
     with tab2:
-        st.subheader("Get Personalized Restaurant Recommendations")
+        st.markdown("""
+            <div style='background-color: #FFF5F5; padding: 1rem; border-radius: 10px; margin-bottom: 2rem;'>
+                <h3 style='margin: 0; color: #FF4B4B;'>Personalized Restaurant Recommendations</h3>
+                <p style='margin: 0.5rem 0 0 0;'>Tell us your preferences, and we'll find the perfect restaurants for you.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
         with st.form("preferences_form"):
+            st.markdown("### Your Preferences")
+
             preferred_cuisines = st.multiselect(
-                "Select your preferred cuisines",
+                "What cuisines do you enjoy?",
                 options=all_cuisines,
-                help="Choose one or more cuisines you enjoy"
+                help="Choose one or more cuisines you love"
             )
 
             col1, col2 = st.columns(2)
             with col1:
                 max_budget = st.number_input(
-                    "Maximum budget per person",
+                    "What's your maximum budget per person?",
                     min_value=10,
                     value=100,
-                    help="Enter your maximum budget per person"
+                    help="Enter your maximum budget"
                 )
 
             with col2:
                 min_rating = st.slider(
-                    "Minimum rating",
+                    "Minimum rating you prefer",
                     min_value=0.0,
                     max_value=5.0,
                     value=3.5,
@@ -120,7 +145,7 @@ try:
                     help="Select minimum acceptable rating"
                 )
 
-            submitted = st.form_submit_button("Get Recommendations", type="primary")
+            submitted = st.form_submit_button("Find My Restaurants", type="primary")
 
         if submitted and preferred_cuisines:
             preferences = {
@@ -129,9 +154,9 @@ try:
                 'min_rating': min_rating
             }
 
-            with st.spinner('Finding the best restaurants for you...'):
+            with st.spinner('🔍 Finding your perfect restaurants...'):
                 recommendations = get_restaurant_recommendations(df, preferences)
-                st.success("Here are your personalized restaurant recommendations!")
+                st.success("✨ Here are your personalized restaurant recommendations!")
                 st.dataframe(
                     recommendations,
                     column_config={
@@ -144,45 +169,56 @@ try:
                     hide_index=True,
                 )
         elif submitted:
-            st.warning("Please select at least one preferred cuisine type.")
+            st.warning("Please select at least one cuisine type to get recommendations.")
 
     # Tab 3: Rating Prediction
     with tab3:
-        st.subheader("Predict Restaurant Rating")
+        st.markdown("""
+            <div style='background-color: #FFF5F5; padding: 1rem; border-radius: 10px; margin-bottom: 2rem;'>
+                <h3 style='margin: 0; color: #FF4B4B;'>Restaurant Rating Predictor</h3>
+                <p style='margin: 0.5rem 0 0 0;'>Use our AI model to predict a restaurant's rating based on its characteristics.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-        # Show model accuracy
-        st.info(f"Model Accuracy: {st.session_state.model_accuracy:.2%}")
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.info(f"🎯 Model Accuracy: {st.session_state.model_accuracy:.2%}")
 
-        # Input form for prediction
         with st.form("prediction_form"):
-            col1, col2 = st.columns(2)
+            st.markdown("### Restaurant Details")
 
+            col1, col2 = st.columns(2)
             with col1:
                 cuisines = st.text_input(
-                    "Cuisines (comma-separated)",
+                    "What cuisines will be served?",
                     help="Enter cuisines, e.g., 'Italian, Pizza'"
                 )
                 cost = st.number_input(
                     "Average cost for two",
                     min_value=10,
-                    value=50
+                    value=50,
+                    help="Enter the average cost for two people"
                 )
-                city = st.text_input("City")
+                city = st.text_input(
+                    "Which city is the restaurant in?",
+                    help="Enter the city name"
+                )
 
             with col2:
                 has_table = st.selectbox(
-                    "Has table booking?",
-                    options=["Yes", "No"]
+                    "Will you offer table booking?",
+                    options=["Yes", "No"],
+                    help="Select if table booking will be available"
                 )
                 has_online = st.selectbox(
-                    "Has online delivery?",
-                    options=["Yes", "No"]
+                    "Will you offer online delivery?",
+                    options=["Yes", "No"],
+                    help="Select if online delivery will be available"
                 )
 
             predict_button = st.form_submit_button("Predict Rating", type="primary")
 
         if predict_button and cuisines and city:
-            # Create a DataFrame for prediction
             pred_data = pd.DataFrame({
                 'Cuisines': [cuisines],
                 'City': [city],
@@ -191,32 +227,39 @@ try:
                 'Has Online delivery': [has_online]
             })
 
-            with st.spinner('Predicting rating...'):
+            with st.spinner('🤔 Analyzing restaurant details...'):
                 predicted_rating = st.session_state.rating_predictor.predict(pred_data)[0]
 
-                # Display prediction with confidence interval
-                st.success(f"Predicted Rating: {'⭐' * int(round(predicted_rating))} ({predicted_rating:.1f})")
+                st.markdown("""
+                    <div style='background-color: #D4EDDA; padding: 1rem; border-radius: 10px; margin: 1rem 0;'>
+                        <h3 style='margin: 0; color: #155724;'>Predicted Rating</h3>
+                        <div style='font-size: 2rem; margin: 0.5rem 0;'>
+                """, unsafe_allow_html=True)
+                st.success(f"{'⭐' * int(round(predicted_rating))} ({predicted_rating:.1f})")
 
-                # Show feature importance explanation
-                st.write("Key factors affecting this prediction:")
-                st.write("- Number of cuisines offered")
-                st.write("- Average cost for two")
-                st.write("- Location (city)")
-                st.write("- Booking and delivery options")
+                st.markdown("""
+                    <div style='background-color: #E7F5FF; padding: 1rem; border-radius: 10px; margin: 1rem 0;'>
+                        <h4 style='margin: 0; color: #004085;'>Key Factors in This Prediction</h4>
+                        <ul style='margin: 0.5rem 0 0 0;'>
+                            <li>Number and types of cuisines offered</li>
+                            <li>Price point (average cost for two)</li>
+                            <li>Location and market characteristics</li>
+                            <li>Available services (booking and delivery)</li>
+                        </ul>
+                    </div>
+                """, unsafe_allow_html=True)
 
         elif predict_button:
             st.warning("Please fill in all required fields (Cuisines and City).")
 
     # Footer
     st.markdown("---")
-    st.markdown(
-        """
-        <div style='text-align: center'>
-            <p>Made with ❤️ for food lovers</p>
+    st.markdown("""
+        <div style='text-align: center; padding: 1rem;'>
+            <p>Made with ❤️ for food lovers everywhere</p>
+            <p style='font-size: 0.8rem; color: #666;'>Using advanced AI and data analysis to help you find the perfect dining experience</p>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
 except Exception as e:
     st.error(f"An error occurred: {str(e)}")
