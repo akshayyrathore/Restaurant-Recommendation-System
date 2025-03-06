@@ -7,13 +7,26 @@ def load_and_process_data():
     """
     try:
         df = pd.read_csv("attached_assets/Dataset .csv")
-        # Clean and process the data
-        required_columns = ['Restaurant Name', 'Cuisines', 'Address', 'Aggregate rating', 'Average Cost for two', 'Currency']
+
+        # Define required columns
+        required_columns = [
+            'Restaurant Name', 'Cuisines', 'Address', 'City',
+            'Aggregate rating', 'Average Cost for two', 'Currency',
+            'Has Table booking', 'Has Online delivery'
+        ]
+
+        # Check if all required columns exist
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+
+        # Select and clean data
         df = df[required_columns]
         df['Cuisines'] = df['Cuisines'].astype(str).str.lower()
+
         return df
     except FileNotFoundError:
-        raise FileNotFoundError("Dataset file not found. Please ensure 'Dataset .csv' exists in the current directory.")
+        raise FileNotFoundError("Dataset file not found. Please ensure 'Dataset .csv' exists in the attached_assets directory.")
     except Exception as e:
         raise Exception(f"Error processing data: {str(e)}")
 
@@ -42,19 +55,10 @@ def filter_restaurants(df, cuisine_type):
 def get_restaurant_recommendations(df, preferences):
     """
     Get restaurant recommendations based on user preferences
-
-    Parameters:
-    - df: DataFrame containing restaurant data
-    - preferences: dict containing:
-        - preferred_cuisines: list of cuisine types
-        - max_budget: maximum budget per person
-        - min_rating: minimum rating threshold
     """
     try:
         # Create a scoring system
         scored_df = df.copy()
-
-        # Initialize score column
         scored_df['score'] = 0.0
 
         # Score based on cuisine preferences (30% weight)
