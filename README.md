@@ -1,6 +1,6 @@
-# Restaurant Finder Application
+# Cuisine Classifier
 
-A Streamlit-based restaurant search application with cuisine-based filtering and clean table display.
+This project is a Cuisine Classifier application built using Streamlit. It predicts restaurant ratings based on various features.
 
 ## Project Structure
 ```
@@ -16,24 +16,63 @@ A Streamlit-based restaurant search application with cuisine-based filtering and
 └── utils.py
 ```
 
-## Setup Instructions
+## Setup and Run
 
-1. Create the directory structure:
-```bash
-mkdir -p .streamlit assets attached_assets
-```
+Follow these steps to set up and run the application:
 
-2. Install the required packages:
-```bash
-pip install streamlit pandas
-```
+### Prerequisites
 
-3. Place the provided Dataset.csv file in the attached_assets/ directory
+- Python 3.7 or higher
+- pip (Python package installer)
 
-4. Run the application:
-```bash
-streamlit run app.py
-```
+### Installation
+
+1. **Clone the Repository**:
+    ```sh
+    git clone <repository_url>
+    cd CuisineClassifier
+    ```
+
+2. **Create a Virtual Environment**:
+    ```sh
+    python -m venv venv
+    ```
+
+3. **Activate the Virtual Environment**:
+    - On Windows:
+      ```sh
+      .\venv\Scripts\activate
+      ```
+    - On macOS/Linux:
+      ```sh
+      source venv/bin/activate
+      ```
+
+4. **Install Dependencies**:
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+### Running the Application
+
+1. **Run the Streamlit Application**:
+    ```sh
+    streamlit run app.py --server.port 8501
+    ```
+
+2. **Access the Application**:
+    Open your web browser and go to:
+    ```
+    http://localhost:8501
+    ```
+
+### Troubleshooting
+
+- **PowerShell Execution Policy Error**:
+  If you encounter an error related to PowerShell execution policies, run the following command in PowerShell (as Administrator):
+  ```sh
+  Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
 
 ## Features
 - Search restaurants by cuisine type
@@ -41,3 +80,7 @@ streamlit run app.py
 - Search history tracking
 - Clean and responsive UI
 - Star rating visualization
+
+
+
+
