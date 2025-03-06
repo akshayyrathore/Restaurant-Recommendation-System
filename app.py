@@ -33,7 +33,7 @@ with st.sidebar:
     st.header("Search History")
     if 'search_history' not in st.session_state:
         st.session_state.search_history = []
-    
+
     for hist in st.session_state.search_history[-5:]:
         st.text(f"🔍 {hist}")
 
@@ -63,23 +63,25 @@ if cuisine_type and search_button:
     # Add to search history
     if cuisine_type not in st.session_state.search_history:
         st.session_state.search_history.append(cuisine_type)
-    
+
     # Show loading spinner
     with st.spinner('Searching restaurants...'):
         results = filter_restaurants(df, cuisine_type)
-        
+
         if isinstance(results, str):
             st.warning(results)
         else:
             st.success(f"Found {len(results)} restaurants serving {cuisine_type} cuisine")
-            
+
             # Display results in a clean table
             st.dataframe(
                 results,
                 column_config={
                     "Restaurant Name": st.column_config.TextColumn("Restaurant Name", width="medium"),
                     "Cuisines": st.column_config.TextColumn("Cuisines", width="large"),
-                    "Address": st.column_config.TextColumn("Address", width="large")
+                    "Address": st.column_config.TextColumn("Address", width="large"),
+                    "Cost": st.column_config.TextColumn("Average Cost", width="small"),
+                    "Rating": st.column_config.TextColumn("Rating", width="small")
                 },
                 hide_index=True,
             )
