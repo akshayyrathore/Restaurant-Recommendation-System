@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from utils import load_and_process_data, filter_restaurants, get_restaurant_recommendations
 from styles import apply_custom_styles
+from ml_utils import RestaurantRatingPredictor
 
 # Page configuration
 st.set_page_config(
@@ -16,6 +17,13 @@ apply_custom_styles()
 # Load and process data
 df = load_and_process_data()
 
+# Initialize ML model
+if 'rating_predictor' not in st.session_state:
+    st.session_state.rating_predictor = RestaurantRatingPredictor()
+    with st.spinner('Training rating prediction model...'):
+        val_score = st.session_state.rating_predictor.fit(df)
+        st.session_state.model_accuracy = val_score
+
 # Sidebar for search history
 with st.sidebar:
     st.header("Search History")
@@ -29,8 +37,13 @@ with st.sidebar:
 st.title("Restaurant Finder & Recommender")
 
 # Create tabs for different functionalities
-tab1, tab2 = st.tabs(["Search by Cuisine", "Get Personalized Recommendations"])
+tab1, tab2, tab3 = st.tabs([
+    "Search by Cuisine", 
+    "Get Personalized Recommendations",
+    "Predict Restaurant Rating"
+])
 
+# Tab 1: Search by Cuisine
 with tab1:
     st.subheader("Find Restaurants by Cuisine")
 
@@ -54,11 +67,9 @@ with tab1:
         search_button = st.button("Search", type="primary")
 
     if cuisine_type and search_button:
-        # Add to search history
         if cuisine_type not in st.session_state.search_history:
             st.session_state.search_history.append(cuisine_type)
 
-        # Show loading spinner
         with st.spinner('Searching restaurants...'):
             results = filter_restaurants(df, cuisine_type)
 
@@ -66,8 +77,6 @@ with tab1:
                 st.warning(results)
             else:
                 st.success(f"Found {len(results)} restaurants serving {cuisine_type} cuisine")
-
-                # Display results in a clean table
                 st.dataframe(
                     results,
                     column_config={
@@ -80,19 +89,17 @@ with tab1:
                     hide_index=True,
                 )
 
+# Tab 2: Personalized Recommendations
 with tab2:
     st.subheader("Get Personalized Restaurant Recommendations")
 
-    # User preferences form
     with st.form("preferences_form"):
-        # Multiple cuisine selection
         preferred_cuisines = st.multiselect(
             "Select your preferred cuisines",
             options=all_cuisines,
             help="Choose one or more cuisines you enjoy"
         )
 
-        # Budget preference
         col1, col2 = st.columns(2)
         with col1:
             max_budget = st.number_input(
@@ -112,24 +119,18 @@ with tab2:
                 help="Select minimum acceptable rating"
             )
 
-        # Submit button
         submitted = st.form_submit_button("Get Recommendations", type="primary")
 
     if submitted and preferred_cuisines:
-        # Create preferences dictionary
         preferences = {
             'preferred_cuisines': preferred_cuisines,
             'max_budget': max_budget,
             'min_rating': min_rating
         }
 
-        # Show loading spinner
         with st.spinner('Finding the best restaurants for you...'):
             recommendations = get_restaurant_recommendations(df, preferences)
-
             st.success("Here are your personalized restaurant recommendations!")
-
-            # Display recommendations
             st.dataframe(
                 recommendations,
                 column_config={
@@ -143,6 +144,67 @@ with tab2:
             )
     elif submitted:
         st.warning("Please select at least one preferred cuisine type.")
+
+# Tab 3: Rating Prediction
+with tab3:
+    st.subheader("Predict Restaurant Rating")
+
+    # Show model accuracy
+    st.info(f"Model Accuracy: {st.session_state.model_accuracy:.2%}")
+
+    # Input form for prediction
+    with st.form("prediction_form"):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            cuisines = st.text_input(
+                "Cuisines (comma-separated)",
+                help="Enter cuisines, e.g., 'Italian, Pizza'"
+            )
+            cost = st.number_input(
+                "Average cost for two",
+                min_value=10,
+                value=50
+            )
+            city = st.text_input("City")
+
+        with col2:
+            has_table = st.selectbox(
+                "Has table booking?",
+                options=["Yes", "No"]
+            )
+            has_online = st.selectbox(
+                "Has online delivery?",
+                options=["Yes", "No"]
+            )
+
+        predict_button = st.form_submit_button("Predict Rating", type="primary")
+
+    if predict_button and cuisines and city:
+        # Create a DataFrame for prediction
+        pred_data = pd.DataFrame({
+            'Cuisines': [cuisines],
+            'City': [city],
+            'Average Cost for two': [cost],
+            'Has Table booking': [has_table],
+            'Has Online delivery': [has_online]
+        })
+
+        with st.spinner('Predicting rating...'):
+            predicted_rating = st.session_state.rating_predictor.predict(pred_data)[0]
+
+            # Display prediction with confidence interval
+            st.success(f"Predicted Rating: {'⭐' * int(round(predicted_rating))} ({predicted_rating:.1f})")
+
+            # Show feature importance explanation
+            st.write("Key factors affecting this prediction:")
+            st.write("- Number of cuisines offered")
+            st.write("- Average cost for two")
+            st.write("- Location (city)")
+            st.write("- Booking and delivery options")
+
+    elif predict_button:
+        st.warning("Please fill in all required fields (Cuisines and City).")
 
 # Footer
 st.markdown("---")
